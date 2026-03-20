@@ -2,13 +2,230 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>GLB demo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ozzy GLB Demo</title>
   <script type="module"
     src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
-  <style>html,body{margin:0;height:100%} model-viewer{width:100%;height:100%}</style>
+  <style>
+    :root {
+      color-scheme: dark;
+      --panel-bg: rgba(38, 42, 50, 0.86);
+      --panel-bg-strong: rgba(46, 51, 61, 0.94);
+      --panel-shadow: rgba(0, 0, 0, 0.35);
+      --text-main: #edf1f8;
+      --text-muted: #aeb8c9;
+      --accent: rgba(115, 154, 255, 0.22);
+      --accent-strong: #8eb0ff;
+    }
+
+    html, body {
+      margin: 0;
+      height: 100%;
+      font-family: "Segoe UI", sans-serif;
+      background: #1f2228;
+    }
+
+    body {
+      overflow: hidden;
+    }
+
+    model-viewer {
+      width: 100%;
+      height: 100%;
+      background:
+        radial-gradient(circle at top, rgba(72, 78, 92, 0.7), rgba(44, 48, 57, 0.92) 36%, rgba(29, 32, 39, 0.98) 100%);
+    }
+
+    .menu {
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      z-index: 10;
+    }
+
+    .menu-toggle {
+      width: 42px;
+      height: 42px;
+      border: 0;
+      border-radius: 14px;
+      background: var(--panel-bg);
+      box-shadow: 0 10px 24px var(--panel-shadow);
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      padding: 0;
+      backdrop-filter: blur(10px);
+    }
+
+    .menu-toggle:hover {
+      background: var(--panel-bg-strong);
+    }
+
+    .menu-toggle span,
+    .menu-toggle span::before,
+    .menu-toggle span::after {
+      display: block;
+      width: 18px;
+      height: 2px;
+      border-radius: 999px;
+      background: var(--text-main);
+      transition: transform 0.2s ease, opacity 0.2s ease;
+      content: "";
+    }
+
+    .menu-toggle span::before {
+      transform: translateY(-6px);
+    }
+
+    .menu-toggle span::after {
+      transform: translateY(4px);
+    }
+
+    .menu.open .menu-toggle span {
+      background: transparent;
+    }
+
+    .menu.open .menu-toggle span::before {
+      transform: translateY(0) rotate(45deg);
+    }
+
+    .menu.open .menu-toggle span::after {
+      transform: translateY(-2px) rotate(-45deg);
+    }
+
+    .menu-panel {
+      margin-top: 10px;
+      min-width: 180px;
+      padding: 8px;
+      border-radius: 16px;
+      background: var(--panel-bg);
+      box-shadow: 0 20px 36px var(--panel-shadow);
+      backdrop-filter: blur(12px);
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(-8px);
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+
+    .menu.open .menu-panel {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
+
+    .menu-title {
+      margin: 4px 8px 8px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .model-option {
+      width: 100%;
+      border: 0;
+      border-radius: 12px;
+      background: transparent;
+      color: var(--text-main);
+      text-align: left;
+      padding: 10px 12px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .model-option:hover,
+    .model-option.active {
+      background: var(--accent);
+      color: #ffffff;
+    }
+
+    .viewer-label {
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      z-index: 10;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: var(--panel-bg);
+      box-shadow: 0 10px 24px var(--panel-shadow);
+      color: var(--text-muted);
+      font-size: 13px;
+      backdrop-filter: blur(10px);
+    }
+
+    @media (max-width: 640px) {
+      .menu {
+        top: 12px;
+        left: 12px;
+      }
+
+      .viewer-label {
+        right: 12px;
+        bottom: 12px;
+        max-width: calc(100vw - 24px);
+      }
+    }
+  </style>
 </head>
 <body>
-  <model-viewer src="mango.glb" camera-controls auto-rotate
-                exposure="1.2" environment-image="neutral"></model-viewer>
+  <div class="menu" id="menu">
+    <button class="menu-toggle" id="menuToggle" type="button" aria-label="Toggle model menu" aria-expanded="false">
+      <span></span>
+    </button>
+    <div class="menu-panel" id="menuPanel">
+      <div class="menu-title">Models</div>
+      <button class="model-option active" type="button" data-model="mango.glb" data-label="Mango">Mango</button>
+      <button class="model-option" type="button" data-model="pulp.glb" data-label="Pulp">Pulp</button>
+      <button class="model-option" type="button" data-model="strawberry.glb" data-label="Strawberry">Strawberry</button>
+    </div>
+  </div>
+
+  <div class="viewer-label" id="viewerLabel">Now viewing: Mango</div>
+
+  <model-viewer
+    id="viewer"
+    src="mango.glb"
+    camera-controls
+    auto-rotate
+    exposure="1.2"
+    environment-image="neutral">
+  </model-viewer>
+
+  <script>
+    const menu = document.getElementById("menu");
+    const menuToggle = document.getElementById("menuToggle");
+    const viewer = document.getElementById("viewer");
+    const viewerLabel = document.getElementById("viewerLabel");
+    const modelOptions = document.querySelectorAll(".model-option");
+
+    menuToggle.addEventListener("click", () => {
+      const isOpen = menu.classList.toggle("open");
+      menuToggle.setAttribute("aria-expanded", String(isOpen));
+    });
+
+    modelOptions.forEach((option) => {
+      option.addEventListener("click", () => {
+        const nextModel = option.dataset.model;
+        const nextLabel = option.dataset.label;
+
+        viewer.src = nextModel;
+        viewerLabel.textContent = "Now viewing: " + nextLabel;
+
+        modelOptions.forEach((item) => item.classList.remove("active"));
+        option.classList.add("active");
+
+        menu.classList.remove("open");
+        menuToggle.setAttribute("aria-expanded", "false");
+      });
+    });
+
+    document.addEventListener("click", (event) => {
+      if (!menu.contains(event.target)) {
+        menu.classList.remove("open");
+        menuToggle.setAttribute("aria-expanded", "false");
+      }
+    });
+  </script>
 </body>
 </html>
